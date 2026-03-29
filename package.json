@@ -1,9 +1,15 @@
 {
-  "name": "peri-peri-food-loading",
+  "name": "ppc-food-loading",
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev",
+    "build": "echo \"No build step required\""
+  },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
     "@vercel/postgres": "^0.10.0"
   }
 }
