@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Recipe App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="peri_peri_catering.png" alt="Peri Peri Catering Logo" class="header-logo">
+            <div class="header-text">
+                <h1>Peri Peri Food Loading</h1>
+                <p>Smart Loading For Smarter Kitchens</p>
+            </div>
+        </header>
+
+        <div class="add-recipe-section">
+            <h2>Add New Recipe</h2>
+            <form id="recipe-form">
+                <div class="form-group">
+                    <label for="recipe-name">Recipe Name:</label>
+                    <input type="text" id="recipe-name" required placeholder="Enter recipe name">
+                </div>
+
+                <div class="form-group">
+                    <label for="ingredients">Ingredients (one per line):</label>
+                    <textarea id="ingredients" rows="6" required placeholder="Enter ingredients, one per line"></textarea>
+                </div>
+
+                <button type="submit">Save List</button>
+            </form>
+        </div>
+
+        <div class="recipes-section">
+            <div class="recipes-header">
+                <h2>Saved Recipes</h2>
+                <div class="recipes-controls">
+                    <div class="search-container">
+                        <input type="text" id="search-input" placeholder="Search recipes..." class="search-input">
+                    </div>
+                    <div class="import-export-controls">
+                        <input type="file" id="import-file" accept=".json" style="display: none;">
+                        <button id="import-recipes" class="import-button">📥 Import</button>
+                        <button id="export-recipes" class="export-button">📤 Export</button>
+                        <button id="uncheck-all-ingredients" class="uncheck-all-button">☐ Uncheck All</button>
+                        <button id="go-to-prep-list" class="go-to-prep-button">📋 Go to Prep List</button>
+                    </div>
+                </div>
+            </div>
+            <div id="recipes-container">
+                <p class="no-recipes">No recipes saved yet. Add your first recipe above!</p>
+            </div>
+        </div>
+
+        <div class="prep-list-section">
+            <div class="prep-list-header">
+                <div class="prep-list-title-and-input">
+                    <h2 id="prep-list-heading">📋 Prep List</h2>
+                    <input type="text" id="prep-list-name" placeholder="Enter guest name..." class="prep-list-name-input">
+                </div>
+            </div>
+            <div class="prep-list-name-controls">
+                <button id="clear-prep-list" class="clear-prep-button">Clear All</button>
+                <button id="print-prep-list" class="print-prep-button">🖨️ Print List</button>
+                <button id="go-to-search" class="go-to-search-button">🔍 Go To Search</button>
+            </div>
+            <div id="prep-list-container">
+                <p class="no-prep-items">No recipes in prep list. Add recipes using the "📋 Add to Prep List" buttons above!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Recipe Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ Edit Recipe</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <form id="edit-recipe-form">
+                <div class="form-group">
+                    <label for="edit-recipe-name">Recipe Name:</label>
+                    <input type="text" id="edit-recipe-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-ingredients">Ingredients (one per line):</label>
+                    <textarea id="edit-ingredients" rows="6" placeholder="Enter ingredients, one per line..." required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancel-edit" class="cancel-button">Cancel</button>
+                    <button type="submit" class="save-button">💾 Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

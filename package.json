@@ -1,0 +1,9 @@
+{
+  "name": "peri-peri-food-loading",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0"
+  }
+}
