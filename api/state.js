@@ -1,28 +1,31 @@
 import { createClient } from '@supabase/supabase-js';
 import { sql } from '@vercel/postgres';
 
-// ---------- INIT ----------
+// ---------- SAFE INIT ----------
 
-const hasSupabase =
-  process.env.SUPABASE_URL &&
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
+let supabase = null;
+let hasSupabase = false;
+let hasPostgres = false;
 
-const supabase = hasSupabase
-  ? createClient(
+try {
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    supabase = createClient(
       process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
-  : null;
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+    hasSupabase = true;
+  }
+} catch (e) {
+  console.warn('Supabase init failed:', e.message);
+}
 
-const hasPostgres = !!process.env.POSTGRES_URL;
+try {
+  hasPostgres = !!process.env.POSTGRES_URL;
+} catch (e) {
+  console.warn('Postgres init failed:', e.message);
+}
 
-// in-memory fallback (last resort)
+// fallback memory
 let memoryStore = {};
 
 // ---------- HELPERS ----------
@@ -34,22 +37,22 @@ function json(res, status, body) {
 
 // ---------- SUPABASE ----------
 
-async function getFromSupabase() {
-  if (!supabase) return null;
+async function getSupabase() {
+  if (!hasSupabase) return null;
 
   const { data, error } = await supabase
     .from('app_state')
     .select('payload')
     .eq('id', 'global')
-    .single();
+    .maybeSingle(); // safer than .single()
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) throw error;
 
-  return data?.payload || {};
+  return data?.payload || null;
 }
 
-async function saveToSupabase(payload) {
-  if (!supabase) return false;
+async function saveSupabase(payload) {
+  if (!hasSupabase) return false;
 
   const { error } = await supabase.from('app_state').upsert({
     id: 'global',
@@ -63,7 +66,7 @@ async function saveToSupabase(payload) {
 
 // ---------- POSTGRES ----------
 
-async function ensurePgTable() {
+async function ensurePg() {
   if (!hasPostgres) return;
 
   await sql`
@@ -75,22 +78,22 @@ async function ensurePgTable() {
   `;
 }
 
-async function getFromPostgres() {
+async function getPostgres() {
   if (!hasPostgres) return null;
 
-  await ensurePgTable();
+  await ensurePg();
 
   const { rows } = await sql`
     SELECT payload FROM app_state WHERE id = 'global'
   `;
 
-  return rows[0]?.payload || {};
+  return rows[0]?.payload || null;
 }
 
-async function saveToPostgres(payload) {
+async function savePostgres(payload) {
   if (!hasPostgres) return false;
 
-  await ensurePgTable();
+  await ensurePg();
 
   await sql`
     INSERT INTO app_state (id, payload, updated_at)
@@ -106,59 +109,49 @@ async function saveToPostgres(payload) {
 
 export default async function handler(req, res) {
   try {
-    // ---------- GET ----------
+    // ===== GET =====
     if (req.method === 'GET') {
-      // 1. Try Supabase
       try {
-        const data = await getFromSupabase();
+        const data = await getSupabase();
         if (data) return json(res, 200, { data, source: 'supabase' });
       } catch (e) {
-        console.warn('Supabase failed:', e.message);
+        console.warn('Supabase GET failed:', e.message);
       }
 
-      // 2. Fallback → Postgres
       try {
-        const data = await getFromPostgres();
+        const data = await getPostgres();
         if (data) return json(res, 200, { data, source: 'postgres' });
       } catch (e) {
-        console.warn('Postgres failed:', e.message);
+        console.warn('Postgres GET failed:', e.message);
       }
 
-      // 3. Last fallback → memory
       return json(res, 200, { data: memoryStore, source: 'memory' });
     }
 
-    // ---------- POST ----------
+    // ===== POST =====
     if (req.method === 'POST') {
       const payload = req.body || {};
 
-      let saved = false;
-
-      // 1. Try Supabase
       try {
-        saved = await saveToSupabase(payload);
+        await saveSupabase(payload);
       } catch (e) {
         console.warn('Supabase save failed:', e.message);
       }
 
-      // 2. Always also save to Postgres (acts as backup)
       try {
-        await saveToPostgres(payload);
+        await savePostgres(payload);
       } catch (e) {
         console.warn('Postgres save failed:', e.message);
       }
 
-      // 3. Memory fallback
       memoryStore = payload;
 
-      return json(res, 200, {
-        ok: true,
-        primary: saved ? 'supabase' : 'fallback',
-      });
+      return json(res, 200, { ok: true });
     }
 
     return json(res, 405, { error: 'Method not allowed' });
   } catch (err) {
-    return json(res, 500, { error: err.message });
+    console.error('FATAL API ERROR:', err);
+    return json(res, 200, { data: memoryStore, source: 'safe-fallback' });
   }
 }
