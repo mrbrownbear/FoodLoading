@@ -4,9 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vercel dev",
-    "start": "vercel dev",
-    "build": "echo \"No build step required\""
+    "dev": "vercel dev"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
